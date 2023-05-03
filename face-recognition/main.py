@@ -2,6 +2,7 @@ import os
 import cv2
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
+import time
 
 device = torch.device("cuda:0")
 
@@ -14,6 +15,9 @@ facenet = facenet.to(device)
 
 # Initialize the camera (default camera: 0)
 cap = cv2.VideoCapture(0)
+width, height = 1920, 1080
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
 # Load the Haar cascade model
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
@@ -32,6 +36,7 @@ for filename in filenames:
     face_embedding = facenet(face_img.unsqueeze(0))
     face_embeddings[filename[:-4]] = face_embedding
 
+prev_time = 0
 
 while True:
     # Capture a single frame from the camera
@@ -62,7 +67,6 @@ while True:
             for k in face_embeddings.keys():
                 # Calculate the distance between feature vectors
                 distance = (face_embeddings[k] - face_detected_embedding).norm().item()
-
                 # Compare the distance with the threshold
                 threshold = 0.9  # The threshold value can be adjusted
                 if distance < threshold:
@@ -72,12 +76,20 @@ while True:
 
         # Draw rectangles around detected faces
         cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-        # Add description (text) to the rectangle
 
+        # Add description (text) to the rectangle
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.7
         font_thickness = 2
         cv2.putText(frame, text, (x, y - 10), font, font_scale, color, font_thickness)
+
+    # FPS calculation
+    curr_time = time.time()
+    fps = 1 / (curr_time - prev_time)
+    prev_time = curr_time
+    # Putting FPS on frame
+    fps_text = f"FPS: {int(fps)}"
+    cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
     # Display the processed frame
     cv2.imshow('Live Video', frame)

@@ -1,3 +1,4 @@
+import time
 import cv2
 import easyocr
 
@@ -11,6 +12,8 @@ def main():
     width, height = 1920, 1080
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+
+    prev_time = 0
 
     while True:
         # Read the image from the camera
@@ -28,6 +31,14 @@ def main():
             x2, y2 = int(result[0][2][0]), int(result[0][2][1])
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.putText(frame, result[1], (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
+        # FPS calculation
+        curr_time = time.time()
+        fps = 1 / (curr_time - prev_time)
+        prev_time = curr_time
+        # Putting FPS on frame
+        fps_text = f"FPS: {int(fps)}"
+        cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
         # Display the image with the camera
         cv2.imshow('Real-time OCR', frame)

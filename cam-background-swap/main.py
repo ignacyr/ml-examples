@@ -1,3 +1,5 @@
+import time
+
 import cv2
 from ultralytics import YOLO
 import torch
@@ -22,6 +24,8 @@ cap = cv2.VideoCapture(0)
 
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+
+prev_time = 0
 
 # Loop through the video frames
 while cap.isOpened():
@@ -70,6 +74,14 @@ while cap.isOpened():
                     hsv_frame[:, :, 1] = cv2.multiply(hsv_frame[:, :, 1], saturation_scale)
                     saturated_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2BGR)
                     frame = np.where(mask == 1, saturated_frame, frame)
+
+        # FPS calculation
+        curr_time = time.time()
+        fps = 1 / (curr_time - prev_time)
+        prev_time = curr_time
+        # Putting FPS on frame
+        fps_text = f"FPS: {int(fps)}"
+        cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
         # Display frame
         cv2.imshow("YOLOv8", frame)
