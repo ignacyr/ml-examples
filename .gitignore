@@ -163,5 +163,5 @@ face-recognition/faces/**
 yolov8*
 banana-classifier/bananas/**
 *.pth
-*/runs/**
-*/trainings/**
+**/runs/**
+**/trainings/**
