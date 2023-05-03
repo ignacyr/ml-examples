@@ -21,6 +21,9 @@ def process_frame(frame):
 def main():
     # Inicjalizacja kamery
     cap = cv2.VideoCapture(0)
+    width, height = 1920, 1080
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
     prev_time = 0
 

@@ -7,12 +7,17 @@ mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, max_num_hands=6, min_detection_confidence=0.5, min_tracking_confidence=0.5)
 mp_draw = mp.solutions.drawing_utils
 
+
 # Draw hand landmarks on the frame
 def draw_hand_landmarks(frame, hand_landmarks):
     mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
+
 # Open the webcam
 cap = cv2.VideoCapture(0)
+width, height = 1920, 1080
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
 prev_time = 0
 

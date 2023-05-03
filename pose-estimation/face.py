@@ -12,6 +12,9 @@ drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
 
 # Użycie kamery
 cap = cv2.VideoCapture(0)
+width, height = 1920, 1080
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
 # Inicjalizacja zmiennej do przechowywania czasu
 prev_time = 0
