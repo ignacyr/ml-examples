@@ -159,9 +159,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
-face-recognition/faces/*
+face-recognition/faces/**
 yolov8*
-banana-classifier/bananas/*
+banana-classifier/bananas/**
 *.pth
-*/runs/
-*/trainings/
+*/runs/**
+*/trainings/**
