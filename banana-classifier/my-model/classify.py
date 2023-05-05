@@ -32,7 +32,7 @@ class BananaClassifier(nn.Module):
 
 
 # Load the trained model
-model_path = "trainings/exp3/banana_classifier.pth"
+model_path = "trainings/exp6/banana_classifier.pth"
 model = BananaClassifier()
 model.load_state_dict(torch.load(model_path))
 model.eval()

@@ -6,9 +6,11 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+from sklearn.metrics import precision_recall_fscore_support
 
 
-# Przygotowanie danych
+# Data preparation
 data_transforms = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -18,10 +20,18 @@ data_transforms = transforms.Compose([
 train_data = ImageFolder(root="../bananas/training", transform=data_transforms)
 test_data = ImageFolder(root="../bananas/testing", transform=data_transforms)
 
-train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+# Split the training data into training and validation sets
+train_size = int(0.7 * len(train_data))
+val_size = len(train_data) - train_size
+train_dataset, val_dataset = torch.utils.data.random_split(train_data, [train_size, val_size])
+
+# Load data
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
-# Budowanie modelu
+
+# Model creation
 class BananaClassifier(nn.Module):
     def __init__(self):
         super(BananaClassifier, self).__init__()
@@ -47,12 +57,14 @@ class BananaClassifier(nn.Module):
 
 model = BananaClassifier()
 
-# Trenowanie modelu
+# Model training
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-num_epochs = 10
-
+num_epochs = 1
+train_losses = []
+val_losses = []
+best_val_loss = float("inf")
+best_state_dict = None
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
@@ -63,29 +75,90 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
+    train_losses.append(running_loss / (i + 1))
 
-    print(f"Epoch { epoch + 1}/{num_epochs}, Loss: {running_loss / (i + 1)}")
+    # Validate the model
+    model.eval()
+    val_loss = 0.0
+    with torch.no_grad():
+        for inputs, labels in val_loader:
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
+    val_loss = val_loss / len(val_loader)
+    val_losses.append(val_loss)
+    print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {train_losses[-1]}, Validation Loss: {val_losses[-1]}")
 
-# Ewaluacja modelu
-correct = 0
-total = 0
-model.eval()
-with torch.no_grad():
-    for inputs, labels in test_loader:
-        outputs = model(inputs)
-        _, predicted = torch.max(outputs, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
+    # Check if model is better than the best one
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        best_state_dict = model.state_dict()
 
-accuracy = 100 * correct / total
-print(f"Accuracy: {accuracy}%")
 
-# Zapisanie modelu
+# Save models
 exp_number = 0
 while os.path.exists(f"trainings/exp{exp_number}"):
     exp_number += 1
-os.makedirs(f"trainings/exp{exp_number}")
-torch.save(model.state_dict(), f"trainings/exp{exp_number}/banana_classifier.pth")
-# Save accuracy
-with open(f"trainings/exp{exp_number}/accuracy.txt", "w") as f:
-    f.write(str(accuracy))
+os.makedirs(f"trainings/exp{exp_number}/best")
+os.makedirs(f"trainings/exp{exp_number}/last")
+
+# Save the best model
+torch.save(best_state_dict, f"trainings/exp{exp_number}/best/banana_classifier.pth")
+# Save the last model
+torch.save(model.state_dict(), f"trainings/exp{exp_number}/last/banana_classifier.pth")
+
+
+def evaluate(mod: BananaClassifier) -> tuple:
+    """ Evaluate the model """
+    correct = 0
+    total = 0
+    all_labels = []
+    all_predictions = []
+    mod.eval()
+    with torch.no_grad():
+        for inp, lab in test_loader:
+            out = mod(inp)
+            _, predicted = torch.max(out, 1)
+            total += lab.size(0)
+            correct += (predicted == lab).sum().item()
+            all_labels.extend(lab.tolist())
+            all_predictions.extend(predicted.tolist())
+    # Calculate accuracy
+    accuracy = 100 * correct / total
+    # Calculate precision, recall and F1-score
+    precision, recall, f1_score, _ = precision_recall_fscore_support(all_labels, all_predictions, average="weighted")
+    # Return metrics
+    return accuracy, precision, recall, f1_score
+
+
+# Evaluate the last model
+acc, prec, rec, f1 = evaluate(mod=model)
+print(f"LAST: Accuracy: {acc}%, Precision: {prec}, Recall: {rec}, F1-score: {f1}")
+with open(f"trainings/exp{exp_number}/last/metrics.txt", "w") as f:
+    f.write(f"Accuracy: {acc}\n")
+    f.write(f"Precision: {prec}\n")
+    f.write(f"Recall: {rec}\n")
+    f.write(f"F1-score: {f1}\n")
+
+# Evaluate the best model
+best_model = BananaClassifier()
+best_model.load_state_dict(best_state_dict)
+acc, prec, rec, f1 = evaluate(mod=best_model)
+print(f"BEST: Accuracy: {acc}%, Precision: {prec}, Recall: {rec}, F1-score: {f1}")
+with open(f"trainings/exp{exp_number}/best/metrics.txt", "w") as f:
+    f.write(f"Accuracy: {acc}\n")
+    f.write(f"Precision: {prec}\n")
+    f.write(f"Recall: {rec}\n")
+    f.write(f"F1-score: {f1}\n")
+
+
+# Create a learning curve plot
+plt.figure()
+plt.plot(train_losses, label="Training Loss")
+plt.plot(val_losses, label="Validation Loss")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Learning Curve")
+plt.legend()
+plt.savefig(f"trainings/exp{exp_number}/learning_curve.png")
+plt.close()

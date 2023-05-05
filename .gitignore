@@ -165,3 +165,7 @@ banana-classifier/bananas/**
 *.pth
 **/runs/**
 **/trainings/**
+
+!banana-classifier/bananas/all/augment.py
+!banana-classifier/bananas/all/shuffle.py
+
