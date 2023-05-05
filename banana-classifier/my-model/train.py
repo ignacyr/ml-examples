@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import precision_recall_fscore_support
 
 
+if torch.cuda.is_available():
+    gpu_name = torch.cuda.get_device_name(torch.cuda.current_device())
+    print(f"Device: {gpu_name}")
+else:
+    print("Device: CPU")
+
 # Data preparation
 data_transforms = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -17,17 +23,18 @@ data_transforms = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-train_data = ImageFolder(root="../bananas/training", transform=data_transforms)
-test_data = ImageFolder(root="../bananas/testing", transform=data_transforms)
+train_data = ImageFolder(root="../bananas/train", transform=data_transforms)
+val_data = ImageFolder(root="../bananas/val", transform=data_transforms)
+test_data = ImageFolder(root="../bananas/test", transform=data_transforms)
 
 # Split the training data into training and validation sets
-train_size = int(0.7 * len(train_data))
-val_size = len(train_data) - train_size
-train_dataset, val_dataset = torch.utils.data.random_split(train_data, [train_size, val_size])
+# train_size = int(0.8 * len(train_data))
+# val_size = len(train_data) - train_size
+# train_dataset, val_dataset = torch.utils.data.random_split(train_data, [train_size, val_size])
 
 # Load data
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+val_loader = DataLoader(val_data, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
 
@@ -60,7 +67,7 @@ model = BananaClassifier()
 # Model training
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
-num_epochs = 1
+num_epochs = 20
 train_losses = []
 val_losses = []
 best_val_loss = float("inf")
