@@ -1,6 +1,4 @@
 import os
-import shutil
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -53,7 +51,7 @@ model = BananaClassifier()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-num_epochs = 2
+num_epochs = 10
 
 for epoch in range(num_epochs):
     model.train()
@@ -68,40 +66,26 @@ for epoch in range(num_epochs):
 
     print(f"Epoch { epoch + 1}/{num_epochs}, Loss: {running_loss / (i + 1)}")
 
-
-# Ewaluacja modelu
-def get_exp_dir():
-    base_dir = "runs"
-    exp_num = 0
-    while True:
-        exp_dir = os.path.join(base_dir, f"exp{exp_num}")
-        if not os.path.exists(exp_dir):
-            os.makedirs(os.path.join(exp_dir, "green"))
-            os.makedirs(os.path.join(exp_dir, "ripe"))
-            return exp_dir
-        exp_num += 1
-
-exp_dir = get_exp_dir()
-
 # Ewaluacja modelu
 correct = 0
 total = 0
 model.eval()
-
 with torch.no_grad():
-    for i, (inputs, labels) in enumerate(test_loader):
+    for inputs, labels in test_loader:
         outputs = model(inputs)
         _, predicted = torch.max(outputs, 1)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
-        for idx, pred in enumerate(predicted):
-            image_path = test_data.imgs[i * 32 + idx][0]
-            image_filename = os.path.basename(image_path)
-            if pred == 0:  # green
-                shutil.copy(image_path, os.path.join(exp_dir, "green", image_filename))
-            elif pred == 1:  # ripe
-                shutil.copy(image_path, os.path.join(exp_dir, "ripe", image_filename))
-
 accuracy = 100 * correct / total
 print(f"Accuracy: {accuracy}%")
+
+# Zapisanie modelu
+exp_number = 0
+while os.path.exists(f"trainings/exp{exp_number}"):
+    exp_number += 1
+os.makedirs(f"trainings/exp{exp_number}")
+torch.save(model.state_dict(), f"trainings/exp{exp_number}/banana_classifier.pth")
+# Save accuracy
+with open(f"trainings/exp{exp_number}/accuracy.txt", "w") as f:
+    f.write(str(accuracy))

@@ -61,7 +61,6 @@ with torch.no_grad():
 accuracy = 100 * correct / total
 print(f"Accuracy: {accuracy}%")
 
-
 # Zapisanie modelu
 exp_number = 0
 while os.path.exists(f"trainings/exp{exp_number}"):
