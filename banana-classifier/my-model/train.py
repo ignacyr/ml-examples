@@ -67,7 +67,7 @@ model = BananaClassifier()
 # Model training
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
-num_epochs = 20
+num_epochs = 40
 train_losses = []
 val_losses = []
 best_val_loss = float("inf")
@@ -82,7 +82,8 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
-    train_losses.append(running_loss / (i + 1))
+    train_loss = running_loss / len(train_loader)
+    train_losses.append(train_loss)
 
     # Validate the model
     model.eval()
@@ -95,7 +96,7 @@ for epoch in range(num_epochs):
     val_loss = val_loss / len(val_loader)
     val_losses.append(val_loss)
     print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {train_losses[-1]}, Validation Loss: {val_losses[-1]}")
-
+    print(f"best_val_loss={best_val_loss} | val_loss={val_loss}")
     # Check if model is better than the best one
     if val_loss < best_val_loss:
         best_val_loss = val_loss
